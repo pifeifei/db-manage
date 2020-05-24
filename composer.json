@@ -1,0 +1,29 @@
+{
+    "name": "pifeifei/database-config",
+    "description": "mysql 数据库主从配置",
+    "type": "library",
+    "require": {
+        "doctrine/dbal": "^2.10",
+        "symfony/console": "^5.0",
+        "symfony/finder": "^5.0",
+        "symfony/var-dumper": "^5.0",
+        "symfony/yaml": "^5.0"
+    },
+    "require-dev": {
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "kis龍",
+            "email": "pifeifei1989@qq.com"
+        }
+    ],
+    "config": {
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "Pff\\DatabaseConfig\\": "src"
+        }
+    }
+}
