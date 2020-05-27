@@ -1,7 +1,12 @@
 {
-    "name": "pifeifei/database-config",
+    "name": "pifeifei/database-manage",
     "description": "mysql 数据库主从配置",
     "type": "library",
+    "keywords": [
+        "database",
+        "mysql",
+        "master-slave"
+    ],
     "require": {
         "doctrine/dbal": "^2.10",
         "symfony/console": "^5.0",
@@ -19,11 +24,17 @@
         }
     ],
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "optimize-autoloader": true
     },
     "autoload": {
         "psr-4": {
-            "Pff\\DatabaseConfig\\": "src"
+            "Pff\\DatabaseManage\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Pff\\DatabaseManageTest\\": "tests"
         }
     }
 }

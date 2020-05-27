@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Support;
+namespace Pff\DatabaseManage\Support;
 
 
 class Str

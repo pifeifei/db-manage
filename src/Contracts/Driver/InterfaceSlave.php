@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Contracts\Driver;
+namespace Pff\DatabaseManage\Contracts\Driver;
 
 
 interface InterfaceSlave

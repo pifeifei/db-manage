@@ -1,13 +1,13 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Driver;
+namespace Pff\DatabaseManage\Driver;
 
-use Pff\DatabaseConfig\Contracts\Replication as InterfaceReplication;
-use Pff\DatabaseConfig\Driver\Mysql\Master;
-use Pff\DatabaseConfig\Support\Str;
+use Pff\DatabaseManage\Contracts\Replication as InterfaceReplication;
+use Pff\DatabaseManage\Driver\AbstractMaster as Master;
+use Pff\DatabaseManage\Support\Str;
 
-class Replication implements InterfaceReplication
+abstract class AbstractReplication implements InterfaceReplication
 {
     /** @var Master */
     protected $manager;
@@ -15,7 +15,8 @@ class Replication implements InterfaceReplication
     protected $config = [
         'user' => 'repl',
         'password' => true, // true:随机密码，或密码字符串
-        'host' => '%' // 需适用所有从库
+        'host' => '%', // 需适用所有从库
+//        'channel' => '',
     ];
 
     public function __construct(array $config, Manager $manager)
@@ -38,9 +39,9 @@ class Replication implements InterfaceReplication
 
     /**
      * @param string $user
-     * @return Replication
+     * @return AbstractReplication
      */
-    public function setUser(string $user): Replication
+    public function setUser(string $user): AbstractReplication
     {
         $this->config['user'] = $user;
         return $this;
@@ -57,9 +58,9 @@ class Replication implements InterfaceReplication
 
     /**
      * @param string $password
-     * @return Replication
+     * @return AbstractReplication
      */
-    public function setPassword(string $password): Replication
+    public function setPassword(string $password): AbstractReplication
     {
         $this->config['password'] = $password;
         return $this;
@@ -75,9 +76,9 @@ class Replication implements InterfaceReplication
 
     /**
      * @param string $host
-     * @return Replication
+     * @return AbstractReplication
      */
-    public function setHost(string $host): Replication
+    public function setHost(string $host): AbstractReplication
     {
         $this->config['host'] = $host;
         return $this;
@@ -86,9 +87,9 @@ class Replication implements InterfaceReplication
     /**
      * reset password
      *
-     * @return Replication
+     * @return AbstractReplication
      */
-    public function randomPassword(): Replication
+    public function randomPassword(): AbstractReplication
     {
         $this->config['password'] = Str::random(30);
         return $this;
@@ -104,6 +105,7 @@ class Replication implements InterfaceReplication
         $master = $this->getMaster();
         return $master->getParams()['host'];
     }
+
     public function getMasterPort()
     {
         $master = $this->getMaster();

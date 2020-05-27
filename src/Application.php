@@ -1,11 +1,11 @@
 <?php
 
 
-namespace Pff\DatabaseConfig;
+namespace Pff\DatabaseManage;
 
 use Exception;
-use Pff\DatabaseConfig\Support\Arr;
-use Pff\DatabaseConfig\Support\Str;
+use Pff\DatabaseManage\Support\Arr;
+use Pff\DatabaseManage\Support\Str;
 use ReflectionClass;
 use ReflectionException;
 use Symfony\Component\Console\Application as SymfonyApplication;

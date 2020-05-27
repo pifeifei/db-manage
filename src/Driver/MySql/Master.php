@@ -1,44 +1,17 @@
 <?php
 
+namespace Pff\DatabaseManage\Driver\MySql;
 
-namespace Pff\DatabaseConfig\Driver\Mysql;
+use Doctrine\DBAL\DBALException;
+use Pff\DatabaseManage\Contracts\Driver\InterfaceSlave;
+use Pff\DatabaseManage\Driver\AbstractMaster;
+use Pff\DatabaseManage\Driver\AbstractReplication;
+use Pff\DatabaseManage\Driver\AbstractSlave;
 
-
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DriverManager;
-use Pff\DatabaseConfig\Contracts\Driver\InterfaceMaster;
-use Pff\DatabaseConfig\Driver\Manager;
-use Symfony\Component\Console\Input\ArgvInput as SymfonyArgvInput;
-use Symfony\Component\Console\Input\Input as SymfonyInput;
-use Symfony\Component\Console\Output\Output as SymfonyOutput;
-use Symfony\Component\Console\Style\SymfonyStyle;
-
-class Master implements InterfaceMaster
+class Master extends AbstractMaster
 {
-    private $manager;
-    private $master;
-    /* @var array 错误说明 */
-    protected $error = [];
-    /* @var array 提示说明 */
-    protected $notice = [];
-    /* @var array */
-    protected $sql = [];
     /* @var int mysql server_id */
     protected $serverId = 0;
-
-    public function __construct($config, Manager $manager)
-    {
-        $this->manager = $manager;
-        $this->master = DriverManager::getConnection($config);
-    }
-
-    /**
-     * @return Connection
-     */
-    public function getDB(): Connection
-    {
-        return $this->master;
-    }
 
     protected function checkVariables()
     {
@@ -52,7 +25,7 @@ class Master implements InterfaceMaster
             'log_slave_updates'
         ];
 
-        $variables = $this->getDB()->query("show variables where Variable_name in ('".implode("','", $variableNames)."')")->fetchAll();
+        $variables = $this->getDB()->query("show variables where Variable_name in ('" . implode("','", $variableNames) . "')")->fetchAll();
         $variables = array_column($variables, 'Value', 'Variable_name');
         if (! is_numeric($variables['server_id']) || $variables['server_id'] <= 0) {
             $this->error[] = 'master server_id 必须是大于 0 的整数';
@@ -77,8 +50,12 @@ class Master implements InterfaceMaster
 
     protected function hasReplicationUser()
     {
-        $repl = $this->manager->getReplication();
-        $sql = "select count(*) ct from `mysql`.user where `user`='".$repl->getUser()."' and Host = '".$repl->getHost()."'";
+        $repl = $this->getReplication();
+        $sql = sprintf(
+            "select count(*) ct from `mysql`.`user` where `user`='%s' and `Host` = '%s'",
+            $repl->getUser(),
+            $repl->getHost()
+        );
         $count = $this->getDB()->query($sql)->fetch();
 
         if ($count['ct'] > 0) {
@@ -106,7 +83,7 @@ class Master implements InterfaceMaster
     }
 
     /**
-     * @return Slave[]
+     * @return InterfaceSlave[]|AbstractSlave[]|Slave[]
      */
     protected function getSlaves()
     {
@@ -117,10 +94,10 @@ class Master implements InterfaceMaster
     {
         $serverIds = [$this->getKey() => $this->getServerId()];
         $slaves = $this->getSlaves();
-        foreach ($slaves as $slave){
+        foreach ($slaves as $slave) {
             $serverId = $slave->getServerId();
             if (false !== array_search($serverId, $serverIds)) {
-                $this->output()->error("server id 冲突，" . $this->getKey() . ','.$slave->getKey());
+                $this->output()->error("server id 冲突，" . $this->getKey() . ',' . $slave->getKey());
                 exit;
             }
             $serverIds[$slave->getKey()] = $serverId;
@@ -132,9 +109,9 @@ class Master implements InterfaceMaster
         $this->checkVariables();
         $this->checkServerId();
         if ($this->hasReplicationUser()) {
-            $repl = $this->manager->getReplication();
+            $repl = $this->getReplication();
             $this->notice[] = '主从复制密码将被重置！';
-            $this->sql[] = "set password for '".$repl->getUser()."'@'".$repl->getHost()."' = password('".$repl->getPassword()."')";
+            $this->sql[] = $repl->BuildSetPasswordSql();
         }
 
         $this->notice = array_unique($this->notice);
@@ -149,6 +126,7 @@ class Master implements InterfaceMaster
 
     /**
      * @return bool
+     * @throws DBALException
      */
     public function run()
     {
@@ -182,7 +160,7 @@ class Master implements InterfaceMaster
         $this->getDB()->query('UNLOCK TABLES');
         $repl = $this->manager->getReplication();
         $this->output()->success([
-            "主从复制用户：".$repl->getUser()."，密码是：" . $repl->getPassword(),
+            "主从复制用户：" . $repl->getUser() . "，密码是：" . $repl->getPassword(),
             'done'
         ]);
 
@@ -205,21 +183,26 @@ class Master implements InterfaceMaster
 //        flush privileges;
     }
 
+    /**
+     * @return \Pff\DatabaseManage\Contracts\Replication|AbstractReplication|Replication
+     */
+    protected function getReplication()
+    {
+        return $this->manager->getReplication();
+    }
+
     protected function buildSql()
     {
-        $repl = $this->manager->getReplication();
-        $user = $repl->getUser();
-        $password = $repl->getPassword();
-        $host = $repl->getHost();
+        $repl = $this->getReplication();
 
         $sql = $this->sql;
         if (! $this->hasReplicationUser()) {
-            $sql[] = "create user '{$user}'@'{$host}' identified by '{$password}'";
+            $sql[] = $repl->buildReplicationSql();
         }
 
-        $sql[] = "grant FILe on *.* to '{$user}'@'{$host}' identified by '{$password}';";
-        $sql[] = "grant replication slave on *.* to '{$user}'@'{$host}' identified by '{$password}'";
-        $sql[] = "flush privileges";
+        $sql[] = $repl->buildGrantFileSql();
+        $sql[] = $repl->buildGrantReplicationSql();
+        $sql[] = $repl->buildFlushPrivilegesSql();
         return $sql;
     }
 
@@ -235,21 +218,5 @@ class Master implements InterfaceMaster
     public function getParams()
     {
         return $this->getDB()->getParams();
-    }
-
-    /**
-     * @return SymfonyArgvInput|SymfonyInput
-     */
-    protected function input()
-    {
-        return $this->manager->getApplication()->input();
-    }
-
-    /**
-     * @return SymfonyOutput|SymfonyStyle
-     */
-    protected function output()
-    {
-        return $this->manager->getApplication()->output();
     }
 }

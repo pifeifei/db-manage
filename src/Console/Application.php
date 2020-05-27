@@ -1,17 +1,17 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Console;
+namespace Pff\DatabaseManage\Console;
 
 
-use Pff\DatabaseConfig\Contracts\Console\Application as ApplicationContract;
+use Pff\DatabaseManage\Contracts\Console\Application as ApplicationContract;
 use Symfony\Component\Console\Application as SymfonyApplication;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Class Application
- * @package Pff\DatabaseConfig\Console
+ * @package Pff\DatabaseManage\Console
  */
 class Application extends SymfonyApplication implements ApplicationContract
 {

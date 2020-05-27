@@ -1,21 +1,19 @@
 <?php
 
+namespace Pff\DatabaseManage\Driver;
 
-namespace Pff\DatabaseConfig\Driver;
-
-
-
-use Pff\DatabaseConfig\Contracts\Console\Application;
-use Pff\DatabaseConfig\Driver\Mysql\Master;
-use Pff\DatabaseConfig\Driver\Mysql\Slave;
+use Pff\DatabaseManage\Contracts\Console\Application;
+use Pff\DatabaseManage\Contracts\Driver\InterfaceMaster;
+use Pff\DatabaseManage\Contracts\Driver\InterfaceSlave;
+use Pff\DatabaseManage\Contracts\Replication;
+use Pff\DatabaseManage\Driver\MySql\Master as MySqlMaster;
+use Pff\DatabaseManage\Driver\MySql\Slave as MySqlSlave;
+use Pff\DatabaseManage\Driver\MySql\Replication as MySqlReplication;
 use Symfony\Component\Console\Application as SymfonyApplication;
 use Symfony\Component\Yaml\Yaml;
 
-class Manager
+final class Manager
 {
-    /* @var Master */
-    protected static $instance;
-
     /* @var Application */
     protected $symfonyApplication;
 
@@ -23,23 +21,77 @@ class Manager
     protected $config;
 
     /**
-     * @var \Pff\DatabaseConfig\Contracts\Replication
+     * @var Replication
      */
     protected $replication;
 
     /**
-     * @var Master
+     * @var InterfaceMaster|AbstractMaster
      */
     protected $master;
 
     /**
-     * @var Slave[]
+     * @var InterfaceSlave[]|AbstractSlave[]
      */
     protected $slaves;
-//    protected $relationship = [
-//        'pdo_mysql' => 'Mysql',
-//        'pdo_sqlite' => 'Sqlite',
-//    ];
+
+    private static $replicationMap = [
+        'pdo_mysql'          => MySqlReplication::class,
+//        'pdo_sqlite'         => PDOSQLiteDriver::class,
+//        'pdo_pgsql'          => PDOPgSQLDriver::class,
+// //        'pdo_oci'            => PDOOCIDriver::class,
+//        'oci8'               => OCI8Driver::class,
+//        'ibm_db2'            => DB2Driver::class,
+//        'pdo_sqlsrv'         => PDOSQLSrvDriver::class,
+// //        'mysqli'             => MySQLiDriver::class,
+//        'drizzle_pdo_mysql'  => DrizzlePDOMySQLDriver::class,
+//        'sqlanywhere'        => SQLAnywhereDriver::class,
+// //        'sqlsrv'             => SQLSrvDriver::class,
+    ];
+
+    private static $masterMap = [
+        'pdo_mysql'          => MySqlMaster::class,
+//        'pdo_sqlite'         => PDOSQLiteDriver::class,
+//        'pdo_pgsql'          => PDOPgSQLDriver::class,
+// //        'pdo_oci'            => PDOOCIDriver::class,
+//        'oci8'               => OCI8Driver::class,
+//        'ibm_db2'            => DB2Driver::class,
+//        'pdo_sqlsrv'         => PDOSQLSrvDriver::class,
+// //        'mysqli'             => MySQLiDriver::class,
+//        'drizzle_pdo_mysql'  => DrizzlePDOMySQLDriver::class,
+//        'sqlanywhere'        => SQLAnywhereDriver::class,
+// //        'sqlsrv'             => SQLSrvDriver::class,
+    ];
+
+    private static $slaveMap = [
+        'pdo_mysql'          => MySqlSlave::class,
+//        'pdo_sqlite'         => PDOSQLiteDriver::class,
+//        'pdo_pgsql'          => PDOPgSQLDriver::class,
+// //        'pdo_oci'            => PDOOCIDriver::class,
+//        'oci8'               => OCI8Driver::class,
+//        'ibm_db2'            => DB2Driver::class,
+//        'pdo_sqlsrv'         => PDOSQLSrvDriver::class,
+// //        'mysqli'             => MySQLiDriver::class,
+//        'drizzle_pdo_mysql'  => DrizzlePDOMySQLDriver::class,
+//        'sqlanywhere'        => SQLAnywhereDriver::class,
+// //        'sqlsrv'             => SQLSrvDriver::class,
+    ];
+
+    private static $driverAlias = [
+        'mysql' => 'pdo_mysql',
+        'mysql2' => 'pdo_mysql',
+        'mysqli' => 'pdo_mysql',
+//        'pdo_oci' => 'oci8',
+//        'sqlsrv' => 'pdo_sqlsrv',
+//        'db2' => 'ibm_db2',
+//        'mssql' => 'pdo_sqlsrv',
+//        'pgsql' => 'pdo_pgsql',
+//        'postgres' => 'pdo_pgsql',
+//        'postgresql' => 'pdo_pgsql',
+//        'sqlite' => 'pdo_sqlite',
+//        'sqlite3' => 'pdo_sqlite',
+    ];
+
 
     public function __construct($configFile, SymfonyApplication $symfonyApplication)
     {
@@ -54,42 +106,72 @@ class Manager
 
         $this->bootstrap();
         $this->symfonyApplication = $symfonyApplication;
-        self::$instance = $this;
     }
 
     protected function bootstrap()
     {
-        $this->replication();
+        $this->createReplication();
         $this->createMaster();
         $this->createSlaves();
     }
 
-    public static function getInstance()
+    /**
+     * @return string
+     * @throws DBDriverException
+     */
+    private function getDriverName()
     {
-        if (is_null(self::$instance)) {
-            echo 'xxx';
-            exit;
+        $driver = $this->getConfig('master');
+        $driverName = $driver['driver'];
+        if (isset(self::$masterMap[$driverName])) {
+            return $driverName;
         }
 
-        return self::$instance;
+        if (isset(self::$driverAlias[$driverName])) {
+            return $driverName = self::$driverAlias[$driverName];
+        }
+
+        throw DBDriverException::unknownDriver($driverName, array_keys(self::$masterMap));
     }
 
-    private function replication()
+    private function getReplicationDriver()
     {
-        $repl = $this->getConfig('replication');
-        $this->replication = new Replication($repl, $this);
+        $driver = $this->getDriverName();
+        return self::$replicationMap[$driver];
     }
 
+    private function createReplication()
+    {
+        $config = $this->getConfig('replication');
+        $class = $this->getReplicationDriver();
+        $this->replication = new $class($config, $this);
+    }
+
+    /**
+     * @return Replication|AbstractReplication
+     */
     public function getReplication()
     {
         return $this->replication;
     }
 
+    private function getMasterDriver()
+    {
+        $driver = $this->getDriverName();
+        return self::$masterMap[$driver];
+    }
     private function createMaster()
     {
-        $this->master = new Master($this->getConfig('master'), $this);
+        $class = $this->getMasterDriver();
+        $config = $this->getConfig('master');
+        return $this->master = new $class($config, $this);
     }
 
+    private function getSlaveDriver()
+    {
+        $driver = $this->getDriverName();
+        return self::$slaveMap[$driver];
+    }
     private function createSlaves()
     {
         $slaves = $this->getConfig('slaves');
@@ -98,12 +180,13 @@ class Manager
         }
         $master = $this->getMaster()->getParams();
         $masterKey = "{$master['host']}:{$master['port']}";
+        $class = $this->getSlaveDriver();
         foreach ($slaves as $slave) {
             $key = "{$slave['host']}:{$slave['port']}";
-            if (isset($this->slaves[$key]) || $key === $masterKey){
+            if (isset($this->slaves[$key]) || $key === $masterKey) {
                 throw new DBDriverException('从库配置重复:' . $key);
             }
-            $this->slaves[$key] = new Slave($slave, $this);
+            $this->slaves[$key] = new $class($slave, $this);
         }
     }
 
@@ -146,14 +229,16 @@ class Manager
         return is_null($name) ? $this->config : $this->config[$name];
     }
 
-
+    /**
+     * @return InterfaceMaster|AbstractMaster
+     */
     public function getMaster()
     {
         return $this->master;
     }
 
     /**
-     * @return Slave[]
+     * @return InterfaceSlave[]|AbstractSlave[]
      */
     public function getSlaves()
     {

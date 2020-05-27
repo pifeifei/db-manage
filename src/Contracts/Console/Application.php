@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Contracts\Console;
+namespace Pff\DatabaseManage\Contracts\Console;
 
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\Input;

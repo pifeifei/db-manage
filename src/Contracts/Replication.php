@@ -1,10 +1,10 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Contracts;
+namespace Pff\DatabaseManage\Contracts;
 
 
-use Pff\DatabaseConfig\Driver\Manager;
+use Pff\DatabaseManage\Driver\Manager;
 
 interface Replication
 {

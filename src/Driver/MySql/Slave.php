@@ -1,44 +1,23 @@
 <?php
 
+namespace Pff\DatabaseManage\Driver\MySql;
 
-namespace Pff\DatabaseConfig\Driver\Mysql;
+use Doctrine\DBAL\DBALException;
+use Pff\DatabaseManage\Driver\AbstractReplication;
+use Pff\DatabaseManage\Driver\AbstractSlave;
 
-
-use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\DriverManager;
-use Pff\DatabaseConfig\Contracts\Driver\InterfaceSlave;
-use Pff\DatabaseConfig\Driver\Manager;
-use Symfony\Component\Console\Input\ArgvInput as SymfonyArgvInput;
-use Symfony\Component\Console\Input\Input as SymfonyInput;
-use Symfony\Component\Console\Output\Output as SymfonyOutput;
-use Symfony\Component\Console\Style\SymfonyStyle;
-
-class Slave implements InterfaceSlave
+class Slave extends AbstractSlave
 {
-    private $manager;
-    private $slave;
-    /* @var array 错误说明 */
-    protected $error = [];
-    /* @var array 提示说明 */
-    protected $notice = [];
-    /* @var array */
-    protected $sql = [];
+//    private $manager;
+//    private $slave;
+//    /* @var array 错误说明 */
+//    protected $error = [];
+//    /* @var array 提示说明 */
+//    protected $notice = [];
+//    /* @var array */
+//    protected $sql = [];
     /* @var int mysql server_id */
     protected $serverId = 0;
-
-    public function __construct($config, Manager $manager)
-    {
-        $this->manager = $manager;
-        $this->slave = DriverManager::getConnection($config);
-    }
-
-    /**
-     * @return Connection
-     */
-    public function getDB(): Connection
-    {
-        return $this->slave;
-    }
 
     protected function checkVariables()
     {
@@ -52,7 +31,7 @@ class Slave implements InterfaceSlave
             'log_slave_updates'
         ];
         $variables = $this->getDB()
-            ->query("show variables where Variable_name in ('".implode("','", $variableNames)."')")
+            ->query("show variables where Variable_name in ('" . implode("','", $variableNames) . "')")
             ->fetchAll();
         $variables = array_column($variables, 'Value', 'Variable_name');
         if (! is_numeric($variables['server_id']) || $variables['server_id'] <= 0) {
@@ -90,21 +69,47 @@ class Slave implements InterfaceSlave
         return ! empty($this->error);
     }
 
+    /**
+     * 判断是否启动复制
+     * @return bool
+     * @throws DBALException
+     */
+    protected function isReplicationRun()
+    {
+        $slaveStatus = $this->getDB()->query($this->getReplication()->buildShowSlaveStatusSql())->fetch();
+        if (empty($slaveStatus)) {
+            return false;
+        }
+
+        if (empty($slaveStatus['Slave_IO_State'])) {
+            return false;
+        }
+
+        return true;
+    }
 
     public function run()
     {
-        $repl = $this->manager->getReplication();
-        $master = $this->manager->getMaster();
-        $masterBinlog = $master->binlog();
+        $repl = $this->getReplication();
 
         $sql = [];
-        $sql[] = "CHANGE MASTER TO MASTER_HOST='".$repl->getMasterHost()."',MASTER_PORT=".$repl->getMasterPort().", MASTER_USER='".$repl->getUser()."', "
-               . "MASTER_PASSWORD='".$repl->getPassword()."', MASTER_LOG_FILE='".$masterBinlog['File']."'";
-        $sql[] = 'start slave;';
 
+        if ($this->isReplicationRun()) {
+            $sql[] = $repl->buildStopSlaveSql();
+        }
+        $sql[] = $repl->buildSlaveChangeMasterSql();
+        $sql[] = $repl->buildStartSlaveSql();
         foreach ($sql as $query) {
             $this->getDB()->query($query);
         }
+    }
+
+    /**
+     * @return \Pff\DatabaseManage\Contracts\Replication|AbstractReplication|Replication
+     */
+    protected function getReplication()
+    {
+        return $this->manager->getReplication();
     }
 
     public function getParams()
@@ -116,21 +121,5 @@ class Slave implements InterfaceSlave
     {
         $params = $this->getParams();
         return "{$params['host']}:{$params['port']}";
-    }
-
-    /**
-     * @return SymfonyArgvInput|SymfonyInput
-     */
-    protected function input()
-    {
-        return $this->manager->getApplication()->input();
-    }
-
-    /**
-     * @return SymfonyOutput|SymfonyStyle
-     */
-    protected function output()
-    {
-        return $this->manager->getApplication()->output();
     }
 }

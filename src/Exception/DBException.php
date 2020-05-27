@@ -1,12 +1,12 @@
 <?php
 
 
-namespace Pff\DatabaseConfig\Exception;
+namespace Pff\DatabaseManage\Exception;
 
 
 use Exception;
 
-class ExecutionTimeoutException extends Exception
+class DBException extends Exception
 {
 
 }

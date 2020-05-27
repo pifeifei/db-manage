@@ -1,6 +1,6 @@
 <?php
 
-namespace Pff\DatabaseConfig\Command;
+namespace Pff\DatabaseManage\Command;
 
 use Symfony\Component\Console\Command\Command as SymfonyCommand;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -12,7 +12,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class Manager extends SymfonyCommand
 {
-    protected static $defaultName = 'config';
+    protected static $defaultName = 'db:manage';
 
     public function __construct()
     {
@@ -35,7 +35,7 @@ class Manager extends SymfonyCommand
             return false;
         }
 
-        $manager = new \Pff\DatabaseConfig\Driver\Manager($configFile, $this->getApplication());
+        $manager = new \Pff\DatabaseManage\Driver\Manager($configFile, $this->getApplication());
 
         return $manager->run();
     }
