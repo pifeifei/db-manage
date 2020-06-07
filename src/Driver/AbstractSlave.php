@@ -14,6 +14,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class AbstractSlave implements InterfaceMaster
 {
+    use Traits\SymfonyCommand;
     protected $manager;
     protected $slave;
     /* @var array 错误说明 */
@@ -35,21 +36,5 @@ abstract class AbstractSlave implements InterfaceMaster
     public function getDB(): Connection
     {
         return $this->slave;
-    }
-
-    /**
-     * @return SymfonyArgvInput|SymfonyInput
-     */
-    protected function input()
-    {
-        return $this->manager->getApplication()->input();
-    }
-
-    /**
-     * @return SymfonyOutput|SymfonyStyle
-     */
-    protected function output()
-    {
-        return $this->manager->getApplication()->output();
     }
 }

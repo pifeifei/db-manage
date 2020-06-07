@@ -14,6 +14,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 abstract class AbstractMaster  implements InterfaceMaster
 {
+    use Traits\SymfonyCommand;
+
     protected $manager;
     protected $master;
     /* @var array 错误说明 */
@@ -47,19 +49,4 @@ abstract class AbstractMaster  implements InterfaceMaster
      */
     abstract public function run();
 
-    /**
-     * @return SymfonyArgvInput|SymfonyInput
-     */
-    protected function input()
-    {
-        return $this->manager->getApplication()->input();
-    }
-
-    /**
-     * @return SymfonyOutput|SymfonyStyle
-     */
-    protected function output()
-    {
-        return $this->manager->getApplication()->output();
-    }
 }

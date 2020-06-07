@@ -22,8 +22,8 @@ class Manager extends SymfonyCommand
     protected function configure()
     {
         $this->setDescription("数据库主从配置")
-            ->addOption('test', 't', InputOption::VALUE_OPTIONAL, 'test')
-            ->addOption('file', 'f', InputOption::VALUE_OPTIONAL, 'config file', 'config.yaml');
+            ->addOption('force', 'f', InputOption::VALUE_OPTIONAL, '已有主从，将覆盖现有主从配置。')
+            ->addOption('file', '', InputOption::VALUE_OPTIONAL, 'config file', 'config.yaml');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

@@ -140,9 +140,11 @@ class Master extends AbstractMaster
         if ($this->hasNotice()) {
             $this->output()->caution($this->notice);
             $this->output()->caution($this->sql);
-            $result = $this->output()->confirm('需要重置主从用户密码，确定要执行吗？', true);
-            if (! $result) {
-                exit;
+            if (! $this->hasForce()) {
+                $result = $this->output()->confirm('需要重置主从用户密码，确定要执行吗？', true);
+                if (! $result) {
+                    exit;
+                }
             }
         }
 

@@ -9,6 +9,8 @@ use Pff\DatabaseManage\Support\Str;
 
 abstract class AbstractReplication implements InterfaceReplication
 {
+    use Traits\SymfonyCommand;
+
     /** @var Master */
     protected $manager;
     /* @var array */

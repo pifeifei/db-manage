@@ -1,0 +1,21 @@
+{
+    "alias": "db-manage.phar",
+    "chmod": "0755",
+    "directories": ["src"],
+    "files": [
+        "LICENSE",
+        "config.yaml.sample"
+    ],
+    "finder": [
+        {
+            "name": "*.php",
+            "exclude": [
+                "Tests"
+            ],
+            "in": "vendor"
+        }
+    ],
+    "main": "bin/db-manage",
+    "output": "db-manage-@git-version@.phar",
+    "stub": true
+}
