@@ -21,13 +21,13 @@ docker run -itd --name db-config pifeifei/database-config
 docker cp ./config.yaml db-config:/config.yaml.sample
 docker stop db-config && docker rm db-config
 # mysql 绑定
-docker run pifeifei/database-config /bin/database-config config
+docker run -it -v config.yaml:/db-manage/config.yaml pifeifei/db-manage /bin/db-manage -f
 # 帮助
-docker run pifeifei/database-config /bin/database-config list
+docker run -it -v config.yaml:/db-manage/config.yaml pifeifei/db-manage /bin/db-manage list
 ```
 
 
 
 ### 其他特性待定
 
-* 
+
