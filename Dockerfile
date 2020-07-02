@@ -18,4 +18,6 @@ RUN php -r "copy('https://install.phpcomposer.com/installer', 'composer-setup.ph
 
 VOLUME /db-manage/config.yaml
 
-CMD ["php", "-a"]
+WORKDIR /db-manage
+
+CMD ["php", "bin/db-manage", "db:manage"]
